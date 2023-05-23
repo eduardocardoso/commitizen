@@ -210,8 +210,17 @@ class Bump:
 
             # Increment is removed when current and next version
             # are expected to be prereleases.
-            if prerelease and current_version_instance.is_prerelease:
-                increment = None
+            force_bump = False
+            if current_version_instance.is_prerelease:
+                last_final = self.find_previous_final_version(current_version_instance)
+                if last_final is not None:
+                    commits = git.get_commits(last_final)
+                    increment = self.find_increment(commits)
+                    semver = bump.semver_generator(last_final, increment=increment, force_bump=True)
+                    if semver != current_version_instance.base_version:
+                        force_bump = True
+                elif prerelease:
+                    increment = None
 
             new_version = bump.generate_version(
                 current_version,
@@ -221,6 +230,7 @@ class Bump:
                 devrelease=devrelease,
                 is_local_version=is_local_version,
                 version_type_cls=self.version_type,
+                force_bump=force_bump
             )
 
         new_tag_version = bump.normalize_tag(
@@ -366,3 +376,22 @@ class Bump:
         if self.no_verify:
             commit_args.append("--no-verify")
         return " ".join(commit_args)
+
+    def find_previous_final_version(self, current_version: Version):
+        tag_format: str = self.bump_settings["tag_format"]
+        current = bump.normalize_tag(
+            str(current_version),
+            tag_format=tag_format,
+            version_type_cls=self.version_type,
+        )
+
+        final_versions = [tag for tag in sorted(git.get_tag_names()) if not Version(tag).is_prerelease or tag == current]
+        if not final_versions:
+            return None
+        current_index = final_versions.index(current)
+        previous_index = current_index - 1
+        if previous_index < 0:
+            return None
+        return final_versions[previous_index]
+
+
