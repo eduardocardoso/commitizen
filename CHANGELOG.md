@@ -1,4 +1,14 @@
 
+## v3.3.0a0 (2023-05-23)
+
+### Feat
+
+- option to merge changelog release notes
+
+### Fix
+
+- properly bump version number from prerelease version
+
 ## v3.2.2 (2023-05-11)
 
 ### Fix
