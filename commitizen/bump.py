@@ -92,7 +92,7 @@ def devrelease_generator(devrelease: int = None) -> str:
     return f"dev{devrelease}"
 
 
-def semver_generator(current_version: str, increment: str = None) -> str:
+def semver_generator(current_version: str, increment: str = None, force_bump: bool = False) -> str:
     version = Version(current_version)
     prev_release = list(version.release)
     increments = [MAJOR, MINOR, PATCH]
@@ -102,7 +102,7 @@ def semver_generator(current_version: str, increment: str = None) -> str:
     # must remove its prerelease tag,
     # so it doesn't matter the increment.
     # Example: 1.0.0a0 with PATCH/MINOR -> 1.0.0
-    if not version.is_prerelease:
+    if not version.is_prerelease or force_bump:
         if increment == MAJOR:
             increments_version[MAJOR] += 1
             increments_version[MINOR] = 0
@@ -128,6 +128,7 @@ def generate_version(
     devrelease: Optional[int] = None,
     is_local_version: bool = False,
     version_type_cls: Optional[Type[VersionProtocol]] = None,
+    force_bump: bool = False,
 ) -> VersionProtocol:
     """Based on the given increment a proper semver will be generated.
 
@@ -142,21 +143,31 @@ def generate_version(
     """
     if version_type_cls is None:
         version_type_cls = Version
+    version = version_type_cls(current_version)
     if is_local_version:
-        version = version_type_cls(current_version)
         dev_version = devrelease_generator(devrelease=devrelease)
         pre_version = prerelease_generator(
             str(version.local), prerelease=prerelease, offset=prerelease_offset
         )
-        semver = semver_generator(str(version.local), increment=increment)
+        semver = semver_generator(str(version.local), increment=increment, force_bump=force_bump)
 
         return version_type_cls(f"{version.public}+{semver}{pre_version}{dev_version}")
     else:
         dev_version = devrelease_generator(devrelease=devrelease)
-        pre_version = prerelease_generator(
-            current_version, prerelease=prerelease, offset=prerelease_offset
-        )
-        semver = semver_generator(current_version, increment=increment)
+        semver = semver_generator(current_version, increment=increment, force_bump=force_bump)
+        release = list(version.release)
+        if len(release) < 3:
+            release += [0]*(3-len(version.release))
+        current_semver = ".".join(str(part) for part in release)
+        if semver == current_semver:
+            pre_version = prerelease_generator(
+                current_version, prerelease=prerelease, offset=prerelease_offset
+            )
+        else:
+            pre_version = prerelease_generator(
+                semver, prerelease=prerelease, offset=prerelease_offset
+            )
+
 
         # TODO: post version
         return version_type_cls(f"{semver}{pre_version}{dev_version}")
