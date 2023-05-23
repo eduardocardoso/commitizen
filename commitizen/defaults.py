@@ -51,6 +51,7 @@ class Settings(TypedDict, total=False):
     post_bump_hooks: Optional[List[str]]
     prerelease_offset: int
     version_type: Optional[str]
+    merge_tags: bool
 
 
 name: str = "cz_conventional_commits"

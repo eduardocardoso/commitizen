@@ -232,6 +232,12 @@ data = {
                         "help": "show changelog to stdout",
                     },
                     {
+                        "name": "--merge-tags",
+                        "action": "store_true",
+                        "default": False,
+                        "help": "merge changesets from all tags within rev range",
+                    },
+                    {
                         "name": "--file-name",
                         "help": "file name of changelog (default: 'CHANGELOG.md')",
                     },
