@@ -1,2 +1,19 @@
-# Publish to pypi
-poetry publish --build -u $PYPI_USERNAME -p $PYPI_PASSWORD
+#!/bin/bash
+set -eou pipefail
+
+# This will give the repo url without the /simple/ part
+# Example: https://<my-domain>-<domain-owner-id>.d.codeartifact.<region>.amazonaws.com/pypi/<my-repo>/
+# Note the lack of the "aws:auth-token@" part
+export CODEARTIFACT_REPOSITORY_URL=`aws codeartifact get-repository-endpoint --profile passport-dev --domain ${AWS_DOMAIN} --domain-owner ${AWS_DOMAIN_OWNER} --repository ${AWS_PYPI_REPOSITORY} --format pypi --query repositoryEndpoint --output text`
+
+# This will give the token to access the repo
+export CODEARTIFACT_AUTH_TOKEN=`aws codeartifact get-authorization-token --profile passport-dev --domain ${AWS_DOMAIN} --domain-owner ${AWS_DOMAIN_OWNER} --query authorizationToken --output text`
+
+# This specifies the user who accesses the repo
+export CODEARTIFACT_USER=aws
+
+# Now use all of these when configuring the repo in poetry
+poetry config repositories.${AWS_PYPI_REPOSITORY} ${CODEARTIFACT_REPOSITORY_URL}
+poetry config http-basic.${AWS_PYPI_REPOSITORY} ${CODEARTIFACT_USER} ${CODEARTIFACT_AUTH_TOKEN}
+
+poetry publish --build -r ${AWS_PYPI_REPOSITORY}
