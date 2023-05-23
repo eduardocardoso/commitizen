@@ -38,6 +38,7 @@ class Changelog:
             "changelog_incremental"
         )
         self.dry_run = args["dry_run"]
+        self.merge_tags = args.get("merge_tags") or self.config.settings.get("merge_tags")
 
         self.current_version = (
             args.get("current_version") or self.config.settings.get("version") or ""
@@ -182,6 +183,17 @@ class Changelog:
         )
         if self.change_type_order:
             tree = changelog.order_changelog_tree(tree, self.change_type_order)
+        if self.merge_tags:
+            single_entry = None
+            for entry in tree:
+                if single_entry is None:
+                    single_entry = entry
+                else:
+                    for change_type in entry["changes"]:
+                        single_entry["changes"][change_type] = single_entry["changes"].get(change_type, [])
+                        single_entry["changes"][change_type] += entry["changes"][change_type]
+            tree = [single_entry]
+
         changelog_out = changelog.render_changelog(tree)
         changelog_out = changelog_out.lstrip("\n")
 
