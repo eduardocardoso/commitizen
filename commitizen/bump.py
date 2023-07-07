@@ -7,7 +7,7 @@ from itertools import zip_longest
 from string import Template
 from typing import List, Optional, Tuple, Type, Union
 
-from packaging.version import Version
+from packaging.version import Version, _parse_letter_version
 
 from commitizen.defaults import MAJOR, MINOR, PATCH, bump_message
 from commitizen.exceptions import CurrentVersionNotFoundError
@@ -66,11 +66,19 @@ def prerelease_generator(
     This function might return something like 'alpha1'
     but it will be handled by Version.
     """
+
+    pre_order = ["a", "b", "rc"]
+
     if not prerelease:
         return ""
 
     version = Version(current_version)
     # version.pre is needed for mypy check
+    if version.is_prerelease:
+        current_index = pre_order.index(version.pre[0])
+        new_index = pre_order.index(_parse_letter_version(prerelease, offset)[0])
+        prerelease = pre_order[max(current_index, new_index)]
+
     if version.is_prerelease and version.pre and prerelease.startswith(version.pre[0]):
         prev_prerelease: int = version.pre[1]
         new_prerelease_number = prev_prerelease + 1
