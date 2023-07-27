@@ -385,8 +385,16 @@ class Bump:
             version_type_cls=self.version_type,
         )
 
+        tags = []
+        for tag in git.get_tag_names():
+            try:
+                Version(tag)
+                tags.append(tag)
+            except InvalidVersion:
+                continue
+
         final_versions = []
-        for tag in sorted(git.get_tag_names()):
+        for tag in sorted(tags, key=lambda v: Version(v)):
             try:
                 if not Version(tag).is_prerelease or tag == current:
                     final_versions.append(tag)
