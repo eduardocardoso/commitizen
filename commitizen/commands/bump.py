@@ -23,7 +23,11 @@ from commitizen.exceptions import (
     NoVersionSpecifiedError,
 )
 from commitizen.providers import get_provider
-from commitizen.version_schemes import get_version_scheme, InvalidVersion
+from commitizen.version_schemes import (
+    get_version_scheme,
+    InvalidVersion,
+    VersionProtocol,
+)
 
 logger = getLogger("commitizen")
 
@@ -215,8 +219,19 @@ class Bump:
 
             # Increment is removed when current and next version
             # are expected to be prereleases.
-            if prerelease and current_version.is_prerelease:
-                increment = None
+            force_bump = False
+            if current_version.is_prerelease:
+                last_final = self.find_previous_final_version(current_version)
+                if last_final is not None:
+                    commits = git.get_commits(last_final)
+                    increment = self.find_increment(commits)
+                    semver = last_final.increment_base(
+                        increment=increment, force_bump=True
+                    )
+                    if semver != current_version.base_version:
+                        force_bump = True
+                elif prerelease:
+                    increment = None
 
             new_version = current_version.bump(
                 increment,
@@ -224,6 +239,7 @@ class Bump:
                 prerelease_offset=prerelease_offset,
                 devrelease=devrelease,
                 is_local_version=is_local_version,
+                force_bump=force_bump,
             )
 
         new_tag_version = bump.normalize_tag(
@@ -375,3 +391,33 @@ class Bump:
         if self.no_verify:
             commit_args.append("--no-verify")
         return " ".join(commit_args)
+
+    def find_previous_final_version(
+        self, current_version: VersionProtocol
+    ) -> VersionProtocol | None:
+        tag_format: str = self.bump_settings["tag_format"]
+        current = bump.normalize_tag(
+            current_version,
+            tag_format=tag_format,
+            scheme=self.scheme,
+        )
+
+        final_versions = []
+        for tag in git.get_tag_names():
+            assert tag
+            try:
+                version = self.scheme(tag)
+                if not version.is_prerelease or tag == current:
+                    final_versions.append(version)
+            except InvalidVersion:
+                continue
+
+        if not final_versions:
+            return None
+
+        final_versions = sorted(final_versions)  # type: ignore [type-var]
+        current_index = final_versions.index(current_version)
+        previous_index = current_index - 1
+        if previous_index < 0:
+            return None
+        return final_versions[previous_index]
