@@ -223,7 +223,12 @@ class Bump:
             if current_version.is_prerelease:
                 last_final = self.find_previous_final_version(current_version)
                 if last_final is not None:
-                    commits = git.get_commits(last_final)
+                    last_final_str = bump.normalize_tag(
+                        current_version,
+                        tag_format=tag_format,
+                        scheme=self.scheme,
+                    )
+                    commits = git.get_commits(last_final_str)
                     increment = self.find_increment(commits)
                     semver = last_final.increment_base(
                         increment=increment, force_bump=True
