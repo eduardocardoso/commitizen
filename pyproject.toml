@@ -8,7 +8,7 @@ version_files = [
 ]
 
 [tool.poetry]
-name = "commitizen"
+name = "passport-commitizen"
 version = "3.6.0a0"
 description = "Python commitizen client tool"
 authors = ["Santiago Fraire <santiwilly@gmail.com>"]
@@ -16,6 +16,9 @@ license = "MIT"
 keywords = ["commitizen", "conventional", "commits", "git"]
 readme = "docs/README.md"
 homepage = "https://github.com/commitizen-tools/commitizen"
+packages = [
+    {include = "commitizen"}
+]
 # See also: https://pypi.org/classifiers/
 classifiers = [
     "Development Status :: 5 - Production/Stable",
