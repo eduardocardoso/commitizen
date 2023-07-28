@@ -233,7 +233,7 @@ class Bump:
                     semver = last_final.increment_base(
                         increment=increment, force_bump=True
                     )
-                    if self.scheme(semver) < self.scheme(current_version.base_version):
+                    if self.scheme(semver) > self.scheme(current_version.base_version):
                         force_bump = True
                 elif prerelease:
                     increment = None
