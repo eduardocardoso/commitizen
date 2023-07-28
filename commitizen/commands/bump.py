@@ -224,7 +224,7 @@ class Bump:
                 last_final = self.find_previous_final_version(current_version)
                 if last_final is not None:
                     last_final_str = bump.normalize_tag(
-                        current_version,
+                        last_final,
                         tag_format=tag_format,
                         scheme=self.scheme,
                     )
@@ -233,7 +233,7 @@ class Bump:
                     semver = last_final.increment_base(
                         increment=increment, force_bump=True
                     )
-                    if semver != current_version.base_version:
+                    if self.scheme(semver) < self.scheme(current_version.base_version):
                         force_bump = True
                 elif prerelease:
                     increment = None
